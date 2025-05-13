@@ -1,0 +1,82 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{enumitem}
+\usepackage{geometry}
+\usepackage{hyperref}
+\geometry{margin=2.5cm}
+
+\title{Étapes de Traitement des Documents Générés via les APIs LEAN}
+\author{Nom de l'auteur}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+Dans le cadre du projet, nous avons eu besoin de générer, traiter et préparer des documents afin de les utiliser dans un système d'analyse ou d'entraînement d'un modèle basé sur la vision par ordinateur ou la reconnaissance de caractères (OCR). Ce document décrit les différentes étapes suivies.
+
+\section{Étapes de traitement des données}
+
+\subsection{Génération des données}
+
+Les trois types de documents ciblés sont :
+\begin{itemize}
+    \item Les reçus de paiement de facture au format \textbf{80mm},
+    \item Les reçus de paiement de facture au format \textbf{A4},
+    \item Les relevés de facturation des \textbf{commissions}.
+\end{itemize}
+
+Ces documents sont générés en appelant les \textbf{API LEAN} fournies par le système, permettant la création dynamique des fichiers PDF. Chaque document est ensuite sauvegardé dans un répertoire structuré en fonction de son type et de son format.
+
+\subsection{Transformation des PDF en images}
+
+Tous les fichiers PDF générés sont convertis en \textbf{images} (au format \texttt{.png} ou \texttt{.jpeg}). Cette transformation permet une exploitation ultérieure par des modèles de vision par ordinateur ou d'OCR. Chaque page du PDF est convertie en une image distincte.
+
+\subsection{Augmentation des données}
+
+Afin d'améliorer la robustesse du modèle aux variations réelles (qualité d'impression, bruit, etc.), des techniques d'augmentation sont appliquées :
+\begin{itemize}
+    \item Rotations légères (par exemple $\pm 5^\circ$),
+    \item Zooms et recadrages,
+    \item Modification de la luminosité et du contraste,
+    \item Ajout de bruit (simulant des artefacts de scan),
+    \item Ajout d'effets visuels (taches, plis, flous).
+\end{itemize}
+
+\subsection{Prétraitement des données}
+
+Les images sont ensuite préparées pour l'apprentissage :
+\begin{itemize}
+    \item Redimensionnement (par exemple en $224 \times 224$),
+    \item Normalisation des valeurs de pixels,
+    \item Éventuelle conversion en niveaux de gris,
+    \item Attribution d'une étiquette correspondant au type de document.
+\end{itemize}
+
+\subsection{Données brutes}
+
+Les fichiers PDF d'origine sont conservés en tant que \textbf{données brutes} dans un répertoire séparé. Cela permet de régénérer ou de vérifier les documents au besoin.
+
+\subsection{Entraînement du modèle}
+
+Un modèle d'apprentissage (OCR, classification ou détection) est entraîné à partir des images labellisées. Le jeu de données est divisé en :
+\begin{itemize}
+    \item \textbf{Jeu d'entraînement},
+    \item \textbf{Jeu de validation},
+    \item \textbf{Jeu de test}.
+\end{itemize}
+
+Selon le cas d'usage, le modèle peut être entraîné pour :
+\begin{itemize}
+    \item Identifier le type de document (classification),
+    \item Extraire automatiquement les informations (OCR),
+    \item Détecter les champs spécifiques dans les documents (détection d'objets).
+\end{itemize}
+
+\end{document}

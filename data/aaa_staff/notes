@@ -1,0 +1,54 @@
+http://localhost:8080/inwi_lean_report/gallery/billPaymentsGet
+{"appInfo":{"appCode":"inwi_wakil_web","appInstitutionCode":"INWI","appVersion":"2.10.0"},"login":"Karim.Zemmouri","token":"213939592410124399061728080357c6ba47a6d5","otp":"","otpReference":"","page":0,"pageSize":10,"sessionRoleCode":"BOC-Dir","messageInfo":{"accessChannel":"WEB","language":"Fr","transactionTime":"2025-05-05T16:03:22.823Z","appRelease":10},"deviceInfo":{"deviceModel":"Chrome","devicePlatform":"Linux","deviceVersion":"130.0.0.0","deviceUuid":"20240419-T231-4617-8485-fwbi78jdYes9"},"contractId":1000,"strArg1":"F","blnArg1":true,"blnArg2":true,"blnArg3":true,"booleans":[false,false,false,false]}
+
+
+http://localhost:8080/inwi_lean_agent/gallery/billPaymentReceipt
+{"appInfo":{"appCode":"inwi_wakil_web","appInstitutionCode":"INWI","appVersion":"2.10.0"},"login":"Karim.Zemmouri","token":"213939592410124399061728080357c6ba47a6d5","otp":"","otpReference":"","page":0,"pageSize":10,"sessionRoleCode":"BOC-Dir","messageInfo":{"accessChannel":"WEB","language":"Fr","transactionTime":"2025-05-05T16:04:17.501Z","appRelease":10},"deviceInfo":{"deviceModel":"Chrome","devicePlatform":"Linux","deviceVersion":"130.0.0.0","deviceUuid":"20240419-T231-4617-8485-fwbi78jdYes9"},"contractId":1000,"id":573103,"blnArg1":true,"strArg1":"A4"}
+
+http://localhost:8080/inwi_lean_agent/commission/commissionStatementsGet
+
+
+http://localhost:8080/inwi_lean_agent/commission/commissionStatementInvoicePrint
+
+{"appInfo":{"appCode":"inwi_wakil_web","appInstitutionCode":"INWI","appVersion":"2.10.0"},"login":"Soufiane.Bamo","token":"115516635781456718629326299340fc2eb16b56","otp":"","otpReference":"","page":0,"pageSize":10,"sessionRoleCode":"AE6000","messageInfo":{"accessChannel":"WEB","language":"Fr","transactionTime":"2025-05-05T15:58:43.566Z","appRelease":10},"deviceInfo":{"deviceModel":"Chrome","devicePlatform":"Linux","deviceVersion":"130.0.0.0","deviceUuid":"20240419-T231-4617-8485-fwbi78jdYes9"},"contractId":10706872,"id":183,"strArg1":"AE6000"}
+
+
+generated/
+├── bill_payments_a4/           # Original PDFs (A4 format receipts)
+├── bill_payments_80mm/         # Original PDFs (80mm receipt format)
+├── commission_statements/      # Original PDFs (commission statements)
+│
+├── image_data/                 # TODO 1: Converted images from PDFs
+│   ├── bill_payments_a4/      # PNG images (one per PDF page)
+│   ├── bill_payments_80mm/    # PNG images (one per PDF page)
+│   └── commission_statements/ # PNG images (one per PDF page)
+│
+├── augmented_data/            # TODO 2: Augmented images
+│   ├── bill_payments_a4/      # Multiple versions per image
+│   ├── bill_payments_80mm/    # Multiple versions per image
+│   └── commission_statements/ # Multiple versions per image
+│
+├── processed_data/            # TODO 3: Preprocessed images
+│   ├── bill_payments_a4/      # Normalized .npy files and preview PNGs
+│   ├── bill_payments_80mm/    # Normalized .npy files and preview PNGs
+│   └── commission_statements/ # Normalized .npy files and preview PNGs
+│
+├── raw_data/                  # TODO 4: Copy of original PDFs
+│   ├── bill_payments_a4/      # Backup of original PDFs
+│   ├── bill_payments_80mm/    # Backup of original PDFs
+│   └── commission_statements/ # Backup of original PDFs
+│
+└── training_data/             # TODO 5: ML-ready datasets
+    ├── train/                 # 70% of data
+    │   ├── bill_payments_a4/
+    │   ├── bill_payments_80mm/
+    │   └── commission_statements/
+    ├── validation/            # 15% of data
+    │   ├── bill_payments_a4/
+    │   ├── bill_payments_80mm/
+    │   └── commission_statements/
+    ├── test/                  # 15% of data
+    │   ├── bill_payments_a4/
+    │   ├── bill_payments_80mm/
+    │   └── commission_statements/
+    └── metadata.json          # Dataset information

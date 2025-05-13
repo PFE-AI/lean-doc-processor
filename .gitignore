@@ -1,1 +1,8 @@
 venv/
+data/augmented_data/
+data/generated_data/
+data/image_data/
+data/processed_data/
+data/raw_data/
+data/training_data/
+models/

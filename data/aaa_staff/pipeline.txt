@@ -1,0 +1,70 @@
+🔹 Generating Data
+Les 3 types de documents ciblés sont :
+
+Les reçus de paiement de facture au format 80mm
+
+Les reçus de paiement de facture au format A4
+
+Les relevés de facturation des commissions
+
+Ces documents sont générés à l’aide des APIs LEAN, en appelant les web services dédiés pour chaque type de document et chaque format. Une fois générés, les fichiers PDF sont stockés dans des répertoires organisés pour être utilisés lors des étapes suivantes.
+
+🔹 Image Data
+Tous les fichiers PDF générés sont convertis en images (format .png ou .jpeg) :
+
+Une image par page
+
+Résolution adaptée pour l’OCR ou un modèle de classification
+
+Cette étape est essentielle pour préparer les données en vue d’un traitement par des modèles de vision par ordinateur ou d’OCR (reconnaissance optique de caractères).
+
+🔹 Augmentation Data
+Des techniques d’augmentation de données sont appliquées sur les images générées :
+
+Rotation légère (±5°)
+Zoom/recadrage
+Ajout de bruit (simulant un scan flou)
+
+Changement de contraste/luminosité
+
+Ajout d’artefacts d’impression (effet de tache, pli)
+
+L’objectif est de rendre les modèles plus robustes face à des documents variés (scannés, photographiés, de mauvaise qualité, etc.).
+
+🔹 Processed
+Les images augmentées sont ensuite prétraitées pour l'entraînement :
+
+Redimensionnement à une taille standard (par exemple 224x224 ou 512x512)
+
+Normalisation des pixels
+
+(optionnel) Conversion en niveaux de gris
+
+Les fichiers sont ensuite labellisés en fonction de leur catégorie (reçu 80mm, reçu A4, relevé commission).
+
+🔹 Raw Data
+Les documents originaux (PDF non traités) sont conservés séparément en tant que données brutes pour :
+
+Références ultérieures
+
+Vérification de cohérence
+
+Génération de nouvelles variantes au besoin
+
+🔹 Training
+Un modèle d’apprentissage automatique ou de deep learning est entraîné à partir des images prétraitées et labellisées. Selon le cas d’usage :
+
+OCR pour extraire les données des documents
+
+Classification pour identifier le type de document
+
+Détection de zones (bounding boxes) pour segmenter les champs importants (montant, date, ID client, etc.)
+
+Le dataset est divisé en :
+
+Données d’entraînement
+
+Données de validation
+
+Données de test
+
