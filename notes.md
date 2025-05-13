@@ -5,3 +5,4 @@ source venv/bin/activate  # Linux/Mac
 
 # Installer les packages essentiels
 pip install tensorflow opencv-python pytesseract spacy transformers fastapi uvicorn
+pip install python-dotenv

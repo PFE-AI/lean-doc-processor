@@ -1,0 +1,331 @@
+# Configuration files for document extractors
+# Save these YAML files in your document_configs directory
+
+# account_statement.yaml
+document_type: account_statement
+description: "Relevé de compte bancaire (Account Statement)"
+
+fields:
+  - name: account_holder_name
+    type: string
+    description: "Nom du titulaire du compte"
+    required: true
+    
+  - name: account_holder_address
+    type: string
+    description: "Adresse du titulaire"
+    required: true
+    
+  - name: account_number
+    type: string
+    description: "RIB / Numéro de compte"
+    required: true
+    
+  - name: currency
+    type: string
+    description: "Devise"
+    required: true
+    
+  - name: start_period
+    type: string
+    description: "Date de début de période"
+    required: true
+    
+  - name: end_period
+    type: string
+    description: "Date de fin de période"
+    required: true
+    
+  - name: opening_balance
+    type: float
+    description: "Solde de départ"
+    required: true
+    
+  - name: closing_balance
+    type: float
+    description: "Solde de clôture"
+    required: true
+    
+  - name: total_debits
+    type: float
+    description: "Total des débits"
+    required: true
+    
+  - name: total_credits
+    type: float
+    description: "Total des crédits"
+    required: true
+    
+  - name: operations
+    type: list
+    description: "Liste des opérations"
+    required: true
+    
+  - name: message
+    type: string
+    description: "Message"
+    required: false
+
+extraction_rules:
+  account_holder_extraction:
+    - "Look for customer.person.firstName + customer.person.lastName"
+    - "Or customer.company.name"
+  address_extraction:
+    - "Look for customer.person.streetName1"
+    - "Or customer.company.streetName1"
+  account_number_extraction:
+    - "Look for account.bban"
+    - "Or RIB field"
+  operations_extraction:
+    - "Extract from accountOperationSummaryDtos collection"
+    - "Each operation should have: operationDay, operationsCount, creditAmount, debitAmount, serviceName"
+
+validation_rules:
+  min_value_checks:
+    total_debits: 0
+    total_credits: 0
+  balance_consistency:
+    - "closing_balance should equal opening_balance + total_credits - total_debits"
+  operations_consistency:
+    - "Sum of operation debits should equal total_debits"
+    - "Sum of operation credits should equal total_credits"
+
+---
+
+# commission_statement.yaml
+document_type: commission_statement
+description: "Relevé de commissions agent"
+
+fields:
+  - name: agent_code
+    type: string
+    description: "Code agent"
+    required: true
+    
+  - name: agent_name
+    type: string
+    description: "Nom de l'agent"
+    required: true
+    
+  - name: agency_name
+    type: string
+    description: "Nom de l'agence"
+    required: false
+    
+  - name: period
+    type: string
+    description: "Période de commission"
+    required: true
+    
+  - name: statement_date
+    type: string
+    description: "Date du relevé"
+    required: true
+    
+  - name: total_transactions
+    type: int
+    description: "Nombre total de transactions"
+    required: true
+    
+  - name: total_transaction_amount
+    type: float
+    description: "Montant total des transactions"
+    required: true
+    
+  - name: commission_details
+    type: list
+    description: "Détails des commissions par service"
+    required: true
+    
+  - name: gross_commission
+    type: float
+    description: "Commission brute"
+    required: true
+    
+  - name: deductions
+    type: float
+    description: "Déductions"
+    required: false
+    
+  - name: net_commission
+    type: float
+    description: "Commission nette"
+    required: true
+    
+  - name: payment_method
+    type: string
+    description: "Mode de paiement"
+    required: false
+    
+  - name: payment_date
+    type: string
+    description: "Date de paiement"
+    required: false
+
+extraction_rules:
+  commission_calculation:
+    - "Extract commission details by service type"
+    - "Calculate gross commission as sum of all service commissions"
+    - "Net commission = gross commission - deductions"
+  period_extraction:
+    - "Look for date range in document header"
+    - "Format: MM/YYYY or DD/MM/YYYY to DD/MM/YYYY"
+
+validation_rules:
+  min_value_checks:
+    total_transactions: 1
+    total_transaction_amount: 0
+    gross_commission: 0
+    net_commission: 0
+  commission_consistency:
+    - "Sum of commission_details amounts should equal gross_commission"
+    - "net_commission should equal gross_commission - deductions"
+  percentage_checks:
+    commission_rate: 
+      min: 0
+      max: 100
+
+---
+
+# bill_payment_receipt.yaml
+document_type: bill_payment_receipt
+description: "Reçu de paiement de factures"
+
+fields:
+  - name: payment_date
+    type: string
+    description: "Date de paiement"
+    required: true
+    
+  - name: receipt_number
+    type: string
+    description: "N° reçu"
+    required: true
+    
+  - name: creditor_tx_number
+    type: string
+    description: "N° Tx créancier"
+    required: true
+    
+  - name: inwi_tx_number
+    type: string
+    description: "N° Tx inwi money"
+    required: true
+    
+  - name: agent_code
+    type: string
+    description: "Code agent"
+    required: true
+    
+  - name: reference
+    type: string
+    description: "Référence"
+    required: false
+    
+  - name: immatriculation
+    type: string
+    description: "Immatriculation"
+    required: false
+    
+  - name: merchant_name
+    type: string
+    description: "Nom du marchand"
+    required: true
+    
+  - name: paid_bills
+    type: list
+    description: "Liste des factures payées"
+    required: true
+    
+  - name: management_fees
+    type: string
+    description: "Frais de gestion"
+    required: true
+    
+  - name: stamp_duty
+    type: float
+    description: "Droits de timbre"
+    required: false
+    
+  - name: total_amount
+    type: string
+    description: "Total (DH TTC)"
+    required: true
+    
+  - name: additional_info
+    type: list
+    description: "Informations supplémentaires"
+    required: false
+    
+  - name: user_field2
+    type: string
+    description: "Message utilisateur 2"
+    required: false
+    
+  - name: marketing_message
+    type: string
+    description: "Message marketing"
+    required: false
+
+extraction_rules:
+  bill_extraction:
+    - "Extract from paidBillsBeans collection"
+    - "Each bill must have: number, description, amount"
+  transaction_numbers:
+    - "billerProcCenterRef -> receipt_number"
+    - "merchantReference -> creditor_tx_number"
+    - "backendAuthorizationNumber -> inwi_tx_number"
+  amount_extraction:
+    - "Total includes fees and stamp duty"
+    - "Format: XX,XX DH TTC or XX.XX"
+
+validation_rules:
+  required_bills:
+    - "At least one paid bill must be present"
+  field_formats:
+    receipt_number:
+      pattern: "^[0-9]{6,12}$"
+    inwi_tx_number:
+      pattern: "^[A-Z0-9]{8,20}$"
+  amount_consistency:
+    - "Total should equal sum of bills + fees + stamp_duty"
+
+prompt_template: |
+  Tu es un expert en extraction d'information à partir de reçus de paiement.
+  Le document est un reçu de paiement de factures du système inwi money.
+  
+  Extrait toutes les informations suivantes du document :
+  
+  Informations principales :
+  - Date de paiement (transactionRequestDate)
+  - N° reçu (billerProcCenterRef)
+  - N° Tx créancier (merchantReference)
+  - N° Tx inwi money (backendAuthorizationNumber)
+  - Code agent (customerCode)
+  
+  Informations du marchand :
+  - Nom du marchand (merchantName)
+  - Référence/Immatriculation (immatriculation) si disponible
+  
+  Factures payées (paidBillsBeans) :
+  Pour chaque facture, extraire :
+  - Référence (number)
+  - Description (description)
+  - Montant (amount)
+  
+  Frais et montants :
+  - Frais de gestion (fees)
+  - Droits de timbre (cashPaymentTax) si applicable
+  - Total TTC (amount)
+  
+  Messages :
+  - Message utilisateur (userField2)
+  - Message marketing (marketingMessage)
+  
+  Informations supplémentaires (infos) :
+  Liste des paires clé-valeur additionnelles
+  
+  Document text:
+  {text}
+  
+  {format_instructions}

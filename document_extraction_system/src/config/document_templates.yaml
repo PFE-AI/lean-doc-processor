@@ -1,0 +1,92 @@
+# src/config/document_templates.yaml
+# Configuration for document types and their extraction rules
+
+account_statement:
+  name: "Account Statement / Relevé de compte"
+  description: "Bank account statement showing transactions and balances"
+  key_indicators:
+    - "relevé de compte"
+    - "كشف الحساب"
+    - "solde de départ"
+    - "nouveau solde"
+  required_fields:
+    - account_holder_name
+    - account_number
+    - period_start
+    - period_end
+    - opening_balance
+    - closing_balance
+    - transactions
+  optional_fields:
+    - account_holder_address
+    - currency
+    - total_debits
+    - total_credits
+
+commission_statement:
+  name: "Commission Statement"
+  description: "Statement showing commission details for agent services"
+  key_indicators:
+    - "commission"
+    - "statement"
+    - "agent"
+  required_fields:
+    - period
+    - agent_code
+    - agent_name
+    - total_transactions
+    - total_amount
+    - total_commission
+    - net_commission
+  optional_fields:
+    - agent_type
+    - commission_details
+    - deductions
+    - payment_date
+
+bill_payment_receipt_a4:
+  name: "Bill Payment Receipt (A4)"
+  description: "Receipt for bill payments in A4 format"
+  key_indicators:
+    - "reçu de paiement"
+    - "REÇU DE PAIEMENT"
+  format: "A4"
+  required_fields:
+    - merchant_name
+    - payment_date
+    - receipt_number
+    - creditor_tx_number
+    - inwi_tx_number
+    - agent_code
+    - bills
+    - management_fees
+    - total_amount
+  optional_fields:
+    - reference
+    - stamp_duty
+    - additional_info
+    - duplicate_date
+    - marketing_message
+
+bill_payment_receipt_80mm:
+  name: "Bill Payment Receipt (80mm)"
+  description: "Receipt for bill payments in 80mm thermal printer format"
+  key_indicators:
+    - "reçu de paiement"
+    - "REÇU DE PAIEMENT"
+  format: "80mm"
+  required_fields:
+    - merchant_name
+    - payment_date
+    - receipt_number
+    - creditor_tx_number
+    - inwi_tx_number
+    - agent_code
+    - bills
+    - management_fees
+    - total_amount
+  optional_fields:
+    - reference
+    - stamp_duty
+    - additional_info
+    - marketing_message

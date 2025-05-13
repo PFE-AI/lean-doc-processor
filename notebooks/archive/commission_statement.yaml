@@ -1,0 +1,93 @@
+document_type: commission_statement
+description: "Relevé de commissions agent"
+
+fields:
+  - name: agent_code
+    type: string
+    description: "Code agent"
+    required: true
+    
+  - name: agent_name
+    type: string
+    description: "Nom de l'agent"
+    required: true
+    
+  - name: agency_name
+    type: string
+    description: "Nom de l'agence"
+    required: false
+    
+  - name: period
+    type: string
+    description: "Période de commission"
+    required: true
+    
+  - name: statement_date
+    type: string
+    description: "Date du relevé"
+    required: true
+    
+  - name: total_transactions
+    type: int
+    description: "Nombre total de transactions"
+    required: true
+    
+  - name: total_transaction_amount
+    type: float
+    description: "Montant total des transactions"
+    required: true
+    
+  - name: commission_details
+    type: list
+    description: "Détails des commissions par service"
+    required: true
+    
+  - name: gross_commission
+    type: float
+    description: "Commission brute"
+    required: true
+    
+  - name: deductions
+    type: float
+    description: "Déductions"
+    required: false
+    
+  - name: net_commission
+    type: float
+    description: "Commission nette"
+    required: true
+    
+  - name: payment_method
+    type: string
+    description: "Mode de paiement"
+    required: false
+    
+  - name: payment_date
+    type: string
+    description: "Date de paiement"
+    required: false
+
+extraction_rules:
+  commission_calculation:
+    - "Extract commission details by service type"
+    - "Calculate gross commission as sum of all service commissions"
+    - "Net commission = gross commission - deductions"
+  period_extraction:
+    - "Look for date range in document header"
+    - "Format: MM/YYYY or DD/MM/YYYY to DD/MM/YYYY"
+
+validation_rules:
+  min_value_checks:
+    total_transactions: 1
+    total_transaction_amount: 0
+    gross_commission: 0
+    net_commission: 0
+  commission_consistency:
+    - "Sum of commission_details amounts should equal gross_commission"
+    - "net_commission should equal gross_commission - deductions"
+  percentage_checks:
+    commission_rate: 
+      min: 0
+      max: 100
+
+---
