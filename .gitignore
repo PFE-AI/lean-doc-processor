@@ -6,3 +6,4 @@ data/processed_data/
 data/raw_data/
 data/training_data/
 models/
+*.pyc
