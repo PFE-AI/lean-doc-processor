@@ -17,24 +17,24 @@ class CommissionStatementExtractor(BaseDocumentExtractor):
         """Create Pydantic model for commission statement"""
         class CommissionDetail(BaseModel):
             service_name: str = Field(description="Nom du service")
-            service_code: Optional[str] = Field(None, description="Code du service")
             transaction_count: int = Field(description="Nombre de transactions")
-            total_amount: float = Field(description="Montant total")
-            commission_rate: Optional[float] = Field(None, description="Taux de commission")
-            commission_amount: float = Field(description="Montant de commission")
+            amount: float = Field(description="Montant (en DH HT)")
+            vat_amount: Optional[float] = Field(None, description="TVA (20%) en DH")
+            net_amount: float = Field(description="Montant (en DH TTC)")
             
         class CommissionStatement(BaseModel):
             period: str = Field(description="Période de commission")
-            agent_code: str = Field(description="Code agent")
-            agent_name: str = Field(description="Nom de l'agent")
-            agent_type: Optional[str] = Field(None, description="Type d'agent")
+            invoice_reference: str = Field(description="Reference N°")
+            agent_code: str = Field(description="Code de l'agent")
+            address: str = Field(description="Adresse de l'agent")
+            phone_number: str = Field(description="Numéro de téléphone de l'agent")
             total_transactions: int = Field(description="Nombre total de transactions")
-            total_amount: float = Field(description="Montant total des transactions")
             commission_details: List[CommissionDetail] = Field(description="Détails par service")
             total_commission: float = Field(description="Commission totale")
-            deductions: Optional[float] = Field(None, description="Déductions")
-            net_commission: float = Field(description="Commission nette")
-            payment_date: Optional[str] = Field(None, description="Date de paiement")
+            total_vat: float = Field(description="TVA totale")
+            net_total_commission_paid: float = Field(description="Avance su commissions (en DH TTC)")
+            net_total_commission_remain: float = Field(description="Net à payer des commissions (en DH TTC)")
+            sum: Optional[str] = Field(None, description="La somme de l'arrête des commission")
             
         return CommissionStatement
     
