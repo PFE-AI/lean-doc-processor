@@ -1,9 +1,12 @@
+from dotenv import load_dotenv
 import os
 import json
 from pathlib import Path
 from src.pipeline import DocumentExtractionPipeline
 from src.base.models import DocumentType
+from src.extractors.account_statement import AccountStatementExtractor
 
+load_dotenv()
 
 def main():
     # Initialize the pipeline
@@ -99,8 +102,6 @@ def main():
 
 
 def test_specific_extractor():
-    """Test a specific extractor directly"""
-    from src.extractors.account_statement import AccountStatementExtractor
     
     api_key = os.environ.get("MISTRAL_API_KEY")
     extractor = AccountStatementExtractor(api_key=api_key)
@@ -130,5 +131,5 @@ def test_specific_extractor():
 
 
 if __name__ == "__main__":
-    main()
-    # test_specific_extractor()
+    # main()
+    test_specific_extractor()

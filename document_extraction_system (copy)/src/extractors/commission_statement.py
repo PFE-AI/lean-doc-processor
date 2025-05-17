@@ -79,4 +79,43 @@ class CommissionStatementExtractor(BaseDocumentExtractor):
         """Validate commission statement data"""
         errors = []
         
+        # Check required fields
+        required_fields = [
+            'period', 'agent_code', 'agent_name', 'total_transactions',
+            'total_amount', 'total_commission', 'net_commission'
+        ]
+        
+        for field in required_fields:
+            if not data.get(field):
+                errors.append(f"Missing required field: {field}")
+        
+        # Validate numeric fields
+        if data.get('total_transactions', 0) <= 0:
+            errors.append("Total transactions must be positive")
+        
+        if data.get('total_amount', 0) <= 0:
+            errors.append("Total amount must be positive")
+        
+        # Validate commission calculations
+        if 'commission_details' in data and data['commission_details']:
+            calculated_commission = sum(detail.get('commission_amount', 0) 
+                                      for detail in data['commission_details'])
+            
+            # Check if calculated commission matches total commission
+            if abs(calculated_commission - data.get('total_commission', 0)) > 0.01:
+                errors.append("Sum of commission details doesn't match total commission")
+        
+        # Validate net commission calculation
+        if 'deductions' in data and data['deductions'] is not None:
+            calculated_net = data.get('total_commission', 0) - data.get('deductions', 0)
+            if abs(calculated_net - data.get('net_commission', 0)) > 0.01:
+                errors.append("Net commission calculation doesn't match (total - deductions)")
+        
+        # Validate commission rates if present
+        if 'commission_details' in data:
+            for detail in data['commission_details']:
+                if 'commission_rate' in detail and detail['commission_rate'] is not None:
+                    if detail['commission_rate'] < 0 or detail['commission_rate'] > 100:
+                        errors.append(f"Invalid commission rate for {detail.get('service_name', 'unknown service')}")
+        
         return errors

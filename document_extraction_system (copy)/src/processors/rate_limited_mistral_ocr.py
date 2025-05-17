@@ -1,26 +1,39 @@
-# src/processors/mistral_ocr.py
-from typing import Dict, List, Optional, Union, Any
+# src/processors/rate_limited_mistral_ocr.py
+from typing import Dict, List, Optional, Union, Any, Callable
 from pathlib import Path
 import logging
 import os
 import base64
 import mimetypes
+import time
+import random
+import requests
 from mistralai import Mistral
 
 logger = logging.getLogger(__name__)
 
-class MistralOCRDocumentProcessor:
+class RateLimitedMistralOCRProcessor:
     """
-    Document processor that uses Mistral AI's OCR capabilities
+    Document processor that uses Mistral AI's OCR capabilities with rate limiting support
     """
     
-    def __init__(self, api_key: Optional[str] = None, model: str = "mistral-ocr-latest"):
+    def __init__(self, 
+                 api_key: Optional[str] = None, 
+                 model: str = "mistral-ocr-latest", 
+                 max_retries: int = 5,
+                 initial_backoff: float = 1.0,
+                 backoff_factor: float = 2.0,
+                 jitter: float = 0.1):
         """
-        Initialize the Mistral OCR document processor
+        Initialize the Mistral OCR document processor with rate limiting
         
         Args:
             api_key: Mistral API key. If None, will use MISTRAL_API_KEY env var
             model: Mistral model to use (must be a dedicated OCR model)
+            max_retries: Maximum number of retries for rate-limited requests
+            initial_backoff: Initial backoff time in seconds
+            backoff_factor: Multiplier for exponential backoff
+            jitter: Random jitter factor to add to backoff (as a fraction)
         """
         self.api_key = api_key or os.environ.get("MISTRAL_API_KEY")
         if not self.api_key:
@@ -28,11 +41,82 @@ class MistralOCRDocumentProcessor:
         
         self.model = model
         self.client = Mistral(api_key=self.api_key)
-        logger.info(f"Initialized MistralOCRDocumentProcessor with model: {model}")
+        self.max_retries = max_retries
+        self.initial_backoff = initial_backoff
+        self.backoff_factor = backoff_factor
+        self.jitter = jitter
+        
+        logger.info(f"Initialized RateLimitedMistralOCRProcessor with model: {model}")
+    
+    def _execute_with_backoff(self, operation_func: Callable, *args, **kwargs):
+        """
+        Execute an operation with exponential backoff for rate limiting
+        
+        Args:
+            operation_func: Function to execute
+            *args, **kwargs: Arguments to pass to the function
+            
+        Returns:
+            Result of the operation function
+        
+        Raises:
+            Exception: If max retries exceeded or non-rate-limit error occurs
+        """
+        retries = 0
+        backoff_time = self.initial_backoff
+        
+        while True:
+            try:
+                return operation_func(*args, **kwargs)
+            
+            except requests.exceptions.HTTPError as e:
+                # Check if it's a rate limit error (429)
+                if e.response.status_code == 429:
+                    if retries >= self.max_retries:
+                        logger.error(f"Max retries ({self.max_retries}) exceeded for rate limiting")
+                        raise
+                    
+                    # Calculate backoff with jitter
+                    jitter_amount = backoff_time * self.jitter * random.uniform(-1, 1)
+                    sleep_time = backoff_time + jitter_amount
+                    
+                    logger.warning(f"Rate limit hit. Retrying in {sleep_time:.2f}s (retry {retries + 1}/{self.max_retries})")
+                    time.sleep(sleep_time)
+                    
+                    # Increase backoff for next attempt
+                    backoff_time *= self.backoff_factor
+                    retries += 1
+                else:
+                    # Non-rate-limit API error
+                    logger.error(f"HTTP error: {e}")
+                    raise
+            
+            except Exception as e:
+                # Check for rate limit error messages in other exception types
+                error_message = str(e).lower()
+                if "429" in error_message or "rate limit" in error_message:
+                    if retries >= self.max_retries:
+                        logger.error(f"Max retries ({self.max_retries}) exceeded for rate limiting")
+                        raise
+                    
+                    # Calculate backoff with jitter
+                    jitter_amount = backoff_time * self.jitter * random.uniform(-1, 1)
+                    sleep_time = backoff_time + jitter_amount
+                    
+                    logger.warning(f"Rate limit detected. Retrying in {sleep_time:.2f}s (retry {retries + 1}/{self.max_retries})")
+                    time.sleep(sleep_time)
+                    
+                    # Increase backoff for next attempt
+                    backoff_time *= self.backoff_factor
+                    retries += 1
+                else:
+                    # Handle other exceptions
+                    logger.error(f"Error during API call: {e}")
+                    raise
     
     def process_file(self, file_path: Union[str, Path]) -> Dict[str, Any]:
         """
-        Process a document file with OCR
+        Process a document file with OCR, handling rate limits
         
         Args:
             file_path: Path to the document file
@@ -65,25 +149,42 @@ class MistralOCRDocumentProcessor:
             # Prepare data URL based on mime type
             data_url = f"data:{mime_type};base64,{base64_content}"
             
-            # Call the OCR API directly
-            ocr_response = self.client.ocr.process(
-                model=self.model,
-                document={
-                    "type": document_type,
-                    document_type: data_url
-                },
-                include_image_base64=True
-            )
+            # Call the OCR API with rate limit handling
+            def ocr_operation():
+                return self.client.ocr.process(
+                    model=self.model,
+                    document={
+                        "type": document_type,
+                        document_type: data_url
+                    },
+                    include_image_base64=True
+                )
             
+            ocr_response = self._execute_with_backoff(ocr_operation)
+
             # Create result dictionary from the OCR response
-            # Handle the actual OCR response format - the text might be in 'content' or directly in the response
             extracted_text = ""
             if hasattr(ocr_response, "content"):
+                # Handle direct content attribute
                 extracted_text = ocr_response.content
             elif hasattr(ocr_response, "pages") and ocr_response.pages:
                 # Extract text from all pages if available
-                extracted_text = "\n\n".join([page.get("content", "") for page in ocr_response.pages if "content" in page])
-            
+                page_texts = []
+                for page in ocr_response.pages:
+                    # Check for different possible field names (content or markdown)
+                    if hasattr(page, "content"):
+                        page_texts.append(page.content)
+                    elif hasattr(page, "markdown"):
+                        page_texts.append(page.markdown)
+                    # If page is a dictionary (not an object)
+                    elif isinstance(page, dict):
+                        if "content" in page:
+                            page_texts.append(page["content"])
+                        elif "markdown" in page:
+                            page_texts.append(page["markdown"])
+                
+                extracted_text = "\n\n".join(page_texts)
+
             result = {
                 "text": extracted_text,
                 "quality_score": self._calculate_quality_score(extracted_text),
@@ -94,7 +195,8 @@ class MistralOCRDocumentProcessor:
                     "additional_info": self._extract_metadata(ocr_response)
                 }
             }
-            
+            print(ocr_response)
+            print(result)
             logger.info(f"Successfully processed document with {len(result['text'])} characters")
             return result
                 
@@ -113,7 +215,7 @@ class MistralOCRDocumentProcessor:
     
     def process_multiple_files(self, file_paths: List[Union[str, Path]]) -> List[Dict[str, Any]]:
         """
-        Process multiple document files with OCR
+        Process multiple document files with OCR, handling rate limits
         
         Args:
             file_paths: List of paths to document files
@@ -192,7 +294,13 @@ class MistralOCRDocumentProcessor:
         for attr in ['id', 'model', 'object', 'usage', 'created_at']:
             if hasattr(response, attr):
                 metadata[attr] = getattr(response, attr)
-        
+                
+        # Get model information if available in different formats
+        if hasattr(response, 'model_name'):
+            metadata['model_name'] = response.model_name
+        elif hasattr(response, 'model'):
+            metadata['model_name'] = response.model
+                
         # If there are any page-specific information
         if hasattr(response, 'pages'):
             metadata['page_count'] = len(response.pages)
@@ -202,7 +310,7 @@ class MistralOCRDocumentProcessor:
     # Alternative method to upload and process a file
     def upload_and_process(self, file_path: Union[str, Path]) -> Dict[str, Any]:
         """
-        Upload a file to Mistral and process it with OCR
+        Upload a file to Mistral and process it with OCR, handling rate limits
         
         Args:
             file_path: Path to the document file
@@ -217,26 +325,35 @@ class MistralOCRDocumentProcessor:
             if not file_path.exists():
                 raise FileNotFoundError(f"File not found: {file_path}")
             
-            # Upload the file
-            uploaded_file = self.client.files.upload(
-                file={
-                    "file_name": file_path.name,
-                    "content": open(file_path, "rb"),
-                },
-                purpose="ocr"
-            )
+            # Upload the file with rate limit handling
+            def upload_operation():
+                return self.client.files.upload(
+                    file={
+                        "file_name": file_path.name,
+                        "content": open(file_path, "rb"),
+                    },
+                    purpose="ocr"
+                )
+            
+            uploaded_file = self._execute_with_backoff(upload_operation)
             
             # Get a signed URL for the uploaded file
-            signed_url = self.client.files.get_signed_url(file_id=uploaded_file.id)
+            def signed_url_operation():
+                return self.client.files.get_signed_url(file_id=uploaded_file.id)
+            
+            signed_url = self._execute_with_backoff(signed_url_operation)
             
             # Process the file with OCR
-            ocr_response = self.client.ocr.process(
-                model=self.model,
-                document={
-                    "type": "document_url",
-                    "document_url": signed_url.url
-                }
-            )
+            def ocr_operation():
+                return self.client.ocr.process(
+                    model=self.model,
+                    document={
+                        "type": "document_url",
+                        "document_url": signed_url.url
+                    }
+                )
+            
+            ocr_response = self._execute_with_backoff(ocr_operation)
             
             # Extract text from the OCR response
             extracted_text = ""

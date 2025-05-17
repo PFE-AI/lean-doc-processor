@@ -17,7 +17,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.prompts import PromptTemplate
 
 # Mistral AI imports
-from mistralai import Mistral
+# from mistralai import Mistral
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
